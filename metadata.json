@@ -1,0 +1,8 @@
+{
+  "name": "Remix LO Command Centre",
+  "description": "Central administration, reporting hierarchy configuration, delegate logistics, and multi-tier liaison officer management system.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

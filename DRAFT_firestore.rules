@@ -1,0 +1,345 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened Global Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == 'vinod.akpandey@gmail.com'
+      );
+    }
+
+    // 3. Entity Validation Blueprints (Anti-Update-Gap)
+    function isValidAdminRecord(data) {
+      return data.keys().hasAll(['uid', 'email', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'createdAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.uid == request.auth.uid &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 200 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidSystemConfig(data) {
+      return data.keys().hasAll([
+          'ownerId', 'hierarchyRule', 'deploymentMode', 'metricMeaning',
+          'dayanandRole', 'delegateTarget', 'arrivalTarget', 'departureTarget',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId', 'hierarchyRule', 'deploymentMode', 'metricMeaning',
+          'dayanandRole', 'delegateTarget', 'arrivalTarget', 'departureTarget',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.hierarchyRule is string && data.hierarchyRule.size() <= 32 &&
+        (data.hierarchyRule == '1_to_1' || data.hierarchyRule == '1_to_5' || data.hierarchyRule == 'unlimited') &&
+        data.deploymentMode is string && data.deploymentMode.size() <= 32 &&
+        (data.deploymentMode == 'web' || data.deploymentMode == 'mobile' || data.deploymentMode == 'both') &&
+        data.metricMeaning is string && data.metricMeaning.size() <= 32 &&
+        (data.metricMeaning == 'live_counts' || data.metricMeaning == 'allocations' || data.metricMeaning == 'custom') &&
+        data.dayanandRole is string && data.dayanandRole.size() <= 32 &&
+        (data.dayanandRole == 'Master LO' || data.dayanandRole == 'LO' || data.dayanandRole == 'Sub-LO') &&
+        data.delegateTarget is number && data.delegateTarget >= 0 && data.delegateTarget <= 10000 &&
+        data.arrivalTarget is number && data.arrivalTarget >= 0 && data.arrivalTarget <= 10000 &&
+        data.departureTarget is number && data.departureTarget >= 0 && data.departureTarget <= 10000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidOfficer(data) {
+      return data.keys().hasAll([
+          'ownerId', 'officerCode', 'fullName', 'designation', 'companyName',
+          'registrationNumber', 'badgeCategory', 'assignedMasterLoId',
+          'assignedLoId', 'assignedSubLoId', 'approvalStatus', 'airportAssignment',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId', 'officerCode', 'fullName', 'designation', 'companyName',
+          'registrationNumber', 'badgeCategory', 'assignedMasterLoId',
+          'assignedLoId', 'assignedSubLoId', 'approvalStatus', 'airportAssignment',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.officerCode is string && data.officerCode.size() >= 1 && data.officerCode.size() <= 32 &&
+        data.fullName is string && data.fullName.size() >= 1 && data.fullName.size() <= 120 &&
+        data.designation is string && data.designation.size() <= 32 &&
+        (data.designation == 'Master LO' || data.designation == 'LO' || data.designation == 'Sub-LO') &&
+        data.companyName is string && data.companyName.size() <= 120 &&
+        data.registrationNumber is string && data.registrationNumber.size() <= 64 &&
+        data.badgeCategory is string && data.badgeCategory.size() <= 64 &&
+        data.assignedMasterLoId is string && data.assignedMasterLoId.size() <= 128 &&
+        data.assignedLoId is string && data.assignedLoId.size() <= 128 &&
+        data.assignedSubLoId is string && data.assignedSubLoId.size() <= 128 &&
+        data.approvalStatus is string && data.approvalStatus.size() <= 32 &&
+        (data.approvalStatus == 'Pending' || data.approvalStatus == 'Approved' || data.approvalStatus == 'Disapproved') &&
+        data.airportAssignment is string && data.airportAssignment.size() <= 160 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidOfficerVault(data, officerId) {
+      return data.keys().hasAll([
+          'ownerId', 'officerId', 'contactNumber', 'idDocumentType',
+          'idDocumentNumber', 'signatureText', 'photoStyle', 'verifiedByStaff',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId', 'officerId', 'contactNumber', 'idDocumentType',
+          'idDocumentNumber', 'signatureText', 'photoStyle', 'verifiedByStaff',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.officerId is string && data.officerId.size() >= 1 && data.officerId.size() <= 128 && data.officerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.officerId == officerId &&
+        data.contactNumber is string && data.contactNumber.size() <= 40 &&
+        data.idDocumentType is string && data.idDocumentType.size() <= 64 &&
+        data.idDocumentNumber is string && data.idDocumentNumber.size() <= 64 &&
+        data.signatureText is string && data.signatureText.size() <= 120 &&
+        data.photoStyle is string && data.photoStyle.size() <= 64 &&
+        data.verifiedByStaff is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAssignmentLog(data) {
+      return data.keys().hasAll([
+          'ownerId', 'subLoId', 'subLoName', 'subLoCode',
+          'previousLoName', 'newLoId', 'newLoName', 'hierarchyRuleApplied', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId', 'subLoId', 'subLoName', 'subLoCode',
+          'previousLoName', 'newLoId', 'newLoName', 'hierarchyRuleApplied', 'createdAt'
+        ]) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.subLoId is string && data.subLoId.size() <= 128 &&
+        data.subLoName is string && data.subLoName.size() <= 120 &&
+        data.subLoCode is string && data.subLoCode.size() <= 32 &&
+        data.previousLoName is string && data.previousLoName.size() <= 120 &&
+        data.newLoId is string && data.newLoId.size() <= 128 &&
+        data.newLoName is string && data.newLoName.size() <= 120 &&
+        data.hierarchyRuleApplied is string && data.hierarchyRuleApplied.size() <= 32 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidDelegateRecord(data) {
+      return data.keys().hasAll([
+          'ownerId', 'delegateName', 'registrationNumber', 'company',
+          'badgeCategory', 'contactNumber', 'masterLoId', 'loId', 'subLoId',
+          'assignedHandler', 'arrivalAirport', 'arrivalFlight', 'arrivalDateTime',
+          'pickupStatus', 'departureAirport', 'departureFlight', 'departureDateTime',
+          'dropoffStatus', 'hotelName', 'hotelAddress', 'checkInDateTime',
+          'checkOutDateTime', 'roomDetails', 'vehicleNumber', 'vehicleType',
+          'driverName', 'driverContact', 'pickupSchedule', 'registrationStatus',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId', 'delegateName', 'registrationNumber', 'company',
+          'badgeCategory', 'contactNumber', 'masterLoId', 'loId', 'subLoId',
+          'assignedHandler', 'arrivalAirport', 'arrivalFlight', 'arrivalDateTime',
+          'pickupStatus', 'departureAirport', 'departureFlight', 'departureDateTime',
+          'dropoffStatus', 'hotelName', 'hotelAddress', 'checkInDateTime',
+          'checkOutDateTime', 'roomDetails', 'vehicleNumber', 'vehicleType',
+          'driverName', 'driverContact', 'pickupSchedule', 'registrationStatus',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.delegateName is string && data.delegateName.size() >= 1 && data.delegateName.size() <= 120 &&
+        data.registrationNumber is string && data.registrationNumber.size() <= 64 &&
+        data.company is string && data.company.size() <= 120 &&
+        data.badgeCategory is string && data.badgeCategory.size() <= 64 &&
+        data.contactNumber is string && data.contactNumber.size() <= 40 &&
+        data.masterLoId is string && data.masterLoId.size() <= 128 &&
+        data.loId is string && data.loId.size() <= 128 &&
+        data.subLoId is string && data.subLoId.size() <= 128 &&
+        data.assignedHandler is string && data.assignedHandler.size() <= 120 &&
+        data.arrivalAirport is string && data.arrivalAirport.size() <= 120 &&
+        data.arrivalFlight is string && data.arrivalFlight.size() <= 40 &&
+        data.arrivalDateTime is string && data.arrivalDateTime.size() <= 64 &&
+        data.pickupStatus is string && data.pickupStatus.size() <= 32 &&
+        (data.pickupStatus == 'Scheduled' || data.pickupStatus == 'En Route' || data.pickupStatus == 'Picked Up' || data.pickupStatus == 'Delayed') &&
+        data.departureAirport is string && data.departureAirport.size() <= 120 &&
+        data.departureFlight is string && data.departureFlight.size() <= 40 &&
+        data.departureDateTime is string && data.departureDateTime.size() <= 64 &&
+        data.dropoffStatus is string && data.dropoffStatus.size() <= 32 &&
+        (data.dropoffStatus == 'Scheduled' || data.dropoffStatus == 'In Transit' || data.dropoffStatus == 'Dropped Off' || data.dropoffStatus == 'Pending') &&
+        data.hotelName is string && data.hotelName.size() <= 120 &&
+        data.hotelAddress is string && data.hotelAddress.size() <= 200 &&
+        data.checkInDateTime is string && data.checkInDateTime.size() <= 64 &&
+        data.checkOutDateTime is string && data.checkOutDateTime.size() <= 64 &&
+        data.roomDetails is string && data.roomDetails.size() <= 80 &&
+        data.vehicleNumber is string && data.vehicleNumber.size() <= 40 &&
+        data.vehicleType is string && data.vehicleType.size() <= 64 &&
+        data.driverName is string && data.driverName.size() <= 120 &&
+        data.driverContact is string && data.driverContact.size() <= 40 &&
+        data.pickupSchedule is string && data.pickupSchedule.size() <= 120 &&
+        data.registrationStatus is string && data.registrationStatus.size() <= 32 &&
+        (data.registrationStatus == 'Pending' || data.registrationStatus == 'Confirmed' || data.registrationStatus == 'Completed' || data.registrationStatus == 'Cancelled') &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // 4. Collection Match Blocks
+    match /admins/{adminId} {
+      allow get: if isVerifiedUser() && isValidId(adminId) && (adminId == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && existing().uid == request.auth.uid;
+      allow create: if isAdmin() && isValidId(adminId) && isValidAdminRecord(incoming()) && incoming().createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    match /configs/{configId} {
+      allow get: if isVerifiedUser() && isValidId(configId) && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(configId) && isValidSystemConfig(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(configId) && isValidSystemConfig(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          (existing().ownerId == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'hierarchyRule', 'deploymentMode', 'metricMeaning', 'dayanandRole',
+              'delegateTarget', 'arrivalTarget', 'departureTarget', 'updatedAt'
+            ])
+          )
+        );
+      allow delete: if isVerifiedUser() && isValidId(configId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    match /officers/{officerId} {
+      allow get: if isVerifiedUser() && isValidId(officerId) && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(officerId) && isValidOfficer(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(officerId) && isValidOfficer(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          // Action 1: Approval Status Change
+          (existing().ownerId == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['approvalStatus', 'updatedAt'])) ||
+          // Action 2: Sub-LO to LO Assignment / Reassignment
+          (existing().ownerId == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['assignedLoId', 'assignedMasterLoId', 'assignedSubLoId', 'updatedAt'])) ||
+          // Action 3: Full Officer Profile Edit
+          (existing().ownerId == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'officerCode', 'fullName', 'designation', 'companyName',
+              'registrationNumber', 'badgeCategory', 'assignedMasterLoId',
+              'assignedLoId', 'assignedSubLoId', 'approvalStatus',
+              'airportAssignment', 'updatedAt'
+            ]))
+        );
+      allow delete: if isVerifiedUser() && isValidId(officerId) && (existing().ownerId == request.auth.uid || isAdmin());
+
+      // Subcollection: Isolated PII & Credential Vault (Master Gate + Split Collection)
+      match /vault/{vaultId} {
+        allow get: if isVerifiedUser() && isValidId(officerId) && isValidId(vaultId) &&
+          exists(/databases/$(database)/documents/officers/$(officerId)) &&
+          (get(/databases/$(database)/documents/officers/$(officerId)).data.ownerId == request.auth.uid || isAdmin());
+        allow list: if isVerifiedUser() && isValidId(officerId) && existing().ownerId == request.auth.uid;
+        allow create: if isVerifiedUser() && isValidId(officerId) && isValidId(vaultId) &&
+          isValidOfficerVault(incoming(), officerId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          exists(/databases/$(database)/documents/officers/$(officerId)) &&
+          get(/databases/$(database)/documents/officers/$(officerId)).data.ownerId == request.auth.uid;
+        allow update: if isVerifiedUser() && isValidId(officerId) && isValidId(vaultId) &&
+          isValidOfficerVault(incoming(), officerId) &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().officerId == existing().officerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          exists(/databases/$(database)/documents/officers/$(officerId)) &&
+          get(/databases/$(database)/documents/officers/$(officerId)).data.ownerId == request.auth.uid && (
+            isAdmin() ||
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'contactNumber', 'idDocumentType', 'idDocumentNumber',
+              'signatureText', 'photoStyle', 'verifiedByStaff', 'updatedAt'
+            ])
+          );
+        allow delete: if isVerifiedUser() && isValidId(officerId) && isValidId(vaultId) &&
+          exists(/databases/$(database)/documents/officers/$(officerId)) &&
+          (get(/databases/$(database)/documents/officers/$(officerId)).data.ownerId == request.auth.uid || isAdmin());
+      }
+    }
+
+    match /assignmentLogs/{logId} {
+      allow get: if isVerifiedUser() && isValidId(logId) && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(logId) && isValidAssignmentLog(incoming()) &&
+        incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isVerifiedUser() && isValidId(logId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    match /delegates/{delegateId} {
+      allow get: if isVerifiedUser() && isValidId(delegateId) && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(delegateId) && isValidDelegateRecord(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(delegateId) && isValidDelegateRecord(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          (
+            existing().ownerId == request.auth.uid &&
+            existing().registrationStatus != 'Completed' &&
+            existing().registrationStatus != 'Cancelled' && (
+              // Action 1: Logistics Status Update (Arrival / Departure / Registration Status)
+              incoming().diff(existing()).affectedKeys().hasOnly([
+                'pickupStatus', 'dropoffStatus', 'registrationStatus', 'updatedAt'
+              ]) ||
+              // Action 2: Full Delegate Record Update
+              incoming().diff(existing()).affectedKeys().hasOnly([
+                'delegateName', 'registrationNumber', 'company', 'badgeCategory',
+                'contactNumber', 'masterLoId', 'loId', 'subLoId', 'assignedHandler',
+                'arrivalAirport', 'arrivalFlight', 'arrivalDateTime', 'pickupStatus',
+                'departureAirport', 'departureFlight', 'departureDateTime', 'dropoffStatus',
+                'hotelName', 'hotelAddress', 'checkInDateTime', 'checkOutDateTime',
+                'roomDetails', 'vehicleNumber', 'vehicleType', 'driverName',
+                'driverContact', 'pickupSchedule', 'registrationStatus', 'updatedAt'
+              ])
+            )
+          )
+        );
+      allow delete: if isVerifiedUser() && isValidId(delegateId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+  }
+}

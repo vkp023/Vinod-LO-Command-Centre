@@ -1,0 +1,479 @@
+{
+  "entities": {
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Trusted administrator record for role-based access control.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "SystemConfig": {
+      "title": "SystemConfig",
+      "description": "Global command centre configuration including Sub-LO hierarchy limits and system finalization parameters.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "hierarchyRule": {
+          "type": "string",
+          "enum": ["1_to_1", "1_to_5", "unlimited"],
+          "maxLength": 32
+        },
+        "deploymentMode": {
+          "type": "string",
+          "enum": ["web", "mobile", "both"],
+          "maxLength": 32
+        },
+        "metricMeaning": {
+          "type": "string",
+          "enum": ["live_counts", "allocations", "custom"],
+          "maxLength": 32
+        },
+        "dayanandRole": {
+          "type": "string",
+          "enum": ["Master LO", "LO", "Sub-LO"],
+          "maxLength": 32
+        },
+        "delegateTarget": {
+          "type": "number"
+        },
+        "arrivalTarget": {
+          "type": "number"
+        },
+        "departureTarget": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "hierarchyRule",
+        "deploymentMode",
+        "metricMeaning",
+        "dayanandRole",
+        "delegateTarget",
+        "arrivalTarget",
+        "departureTarget",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Officer": {
+      "title": "Officer",
+      "description": "Operational profile for a Master LO, LO, or Sub-LO in the command centre.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "officerCode": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "fullName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "designation": {
+          "type": "string",
+          "enum": ["Master LO", "LO", "Sub-LO"],
+          "maxLength": 32
+        },
+        "companyName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "registrationNumber": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "badgeCategory": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "assignedMasterLoId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "assignedLoId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "assignedSubLoId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "approvalStatus": {
+          "type": "string",
+          "enum": ["Pending", "Approved", "Disapproved"],
+          "maxLength": 32
+        },
+        "airportAssignment": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "officerCode",
+        "fullName",
+        "designation",
+        "companyName",
+        "registrationNumber",
+        "badgeCategory",
+        "assignedMasterLoId",
+        "assignedLoId",
+        "assignedSubLoId",
+        "approvalStatus",
+        "airportAssignment",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "OfficerVault": {
+      "title": "OfficerVault",
+      "description": "Isolated PII and security credential vault for an Officer (photograph, ID document, signature, and direct contact number).",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "officerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "contactNumber": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "idDocumentType": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "idDocumentNumber": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "signatureText": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "photoStyle": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "verifiedByStaff": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "officerId",
+        "contactNumber",
+        "idDocumentType",
+        "idDocumentNumber",
+        "signatureText",
+        "photoStyle",
+        "verifiedByStaff",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AssignmentLog": {
+      "title": "AssignmentLog",
+      "description": "Audit trail of Sub-LO to LO assignments and reassignments.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "subLoId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "subLoName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "subLoCode": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "previousLoName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "newLoId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "newLoName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "hierarchyRuleApplied": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "subLoId",
+        "subLoName",
+        "subLoCode",
+        "previousLoName",
+        "newLoId",
+        "newLoName",
+        "hierarchyRuleApplied",
+        "createdAt"
+      ]
+    },
+    "DelegateRecord": {
+      "title": "DelegateRecord",
+      "description": "Comprehensive delegate registration, team assignment, airport arrival/departure, hotel, and transport record.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "delegateName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "registrationNumber": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "company": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "badgeCategory": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "contactNumber": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "masterLoId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "loId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "subLoId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "assignedHandler": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "arrivalAirport": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "arrivalFlight": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "arrivalDateTime": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "pickupStatus": {
+          "type": "string",
+          "enum": ["Scheduled", "En Route", "Picked Up", "Delayed"],
+          "maxLength": 32
+        },
+        "departureAirport": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "departureFlight": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "departureDateTime": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "dropoffStatus": {
+          "type": "string",
+          "enum": ["Scheduled", "In Transit", "Dropped Off", "Pending"],
+          "maxLength": 32
+        },
+        "hotelName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "hotelAddress": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "checkInDateTime": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "checkOutDateTime": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "roomDetails": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "vehicleNumber": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "vehicleType": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "driverName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "driverContact": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "pickupSchedule": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "registrationStatus": {
+          "type": "string",
+          "enum": ["Pending", "Confirmed", "Completed", "Cancelled"],
+          "maxLength": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "delegateName",
+        "registrationNumber",
+        "company",
+        "badgeCategory",
+        "contactNumber",
+        "masterLoId",
+        "loId",
+        "subLoId",
+        "assignedHandler",
+        "arrivalAirport",
+        "arrivalFlight",
+        "arrivalDateTime",
+        "pickupStatus",
+        "departureAirport",
+        "departureFlight",
+        "departureDateTime",
+        "dropoffStatus",
+        "hotelName",
+        "hotelAddress",
+        "checkInDateTime",
+        "checkOutDateTime",
+        "roomDetails",
+        "vehicleNumber",
+        "vehicleType",
+        "driverName",
+        "driverContact",
+        "pickupSchedule",
+        "registrationStatus",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Administrator registry for global command centre privileges."
+    },
+    "/configs/{configId}": {
+      "schema": { "$ref": "#/entities/SystemConfig" },
+      "description": "System hierarchy and operational mode configuration."
+    },
+    "/officers/{officerId}": {
+      "schema": { "$ref": "#/entities/Officer" },
+      "description": "Master LO, LO, and Sub-LO operational records."
+    },
+    "/officers/{officerId}/vault/{vaultId}": {
+      "schema": { "$ref": "#/entities/OfficerVault" },
+      "description": "Isolated PII and security credential documents for an officer."
+    },
+    "/assignmentLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AssignmentLog" },
+      "description": "Historical audit log of Sub-LO to LO assignments."
+    },
+    "/delegates/{delegateId}": {
+      "schema": { "$ref": "#/entities/DelegateRecord" },
+      "description": "Delegate registrations, assigned teams, flights, hotels, and vehicles."
+    }
+  }
+}
